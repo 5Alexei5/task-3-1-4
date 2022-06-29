@@ -166,7 +166,7 @@ function tableFull() {
         table.innerHTML = html;
     });
 }
-// вызываем метод при стпрте странички
+// вызываем метод при старте странички
 tableFull();
 // достаем аутентифицированного пользователя
 async function getAuthenticatedUser() {
@@ -186,7 +186,7 @@ getAuthenticatedUser().then(function (value) {
 
     for (let i = 0; i < roles.length; i++) {
         rolesValue += roles[i].authority;
-        console.log(roles[i]);
+
         if (i != (roles.length-1)) {
             rolesValue += ' ';
         }
@@ -264,7 +264,34 @@ async function addNewUser() {
         body: JSON.stringify(user)
     });
 
-    await response.json();
+    if (response.ok) {
+        let userId = await response.json();
+
+        let printRoles = '';
+        for (let i = 0; i < arrRoles.length; i++) {
+            printRoles += arrRoles[i].authority;
+            if (i != (arrRoles.length - 1)) {
+                printRoles += ' ';
+            }
+        }
+
+        let tbody = document.querySelector('#users tbody');
+
+        let tr = document.createElement('tr');
+        tr.innerHTML = `
+                  <th>${userId.id}</th>
+                  <th>${firstname_}</th>
+                  <th>${lastname_}</th>
+                  <th>${age_}</th>
+                  <th>${email_}</th>
+                  <th>${printRoles}</th>
+                  <th><button class="btn btn-info" onclick="edit(${userId.id});" data-target="#edit" data-toggle="modal">Edit</button></th>
+                  <th><button class="btn btn-danger" onclick="remove(${userId.id});" data-target="#delete" data-toggle="modal">Delete</button></th>`;
+
+        tbody.append(tr);
+
+    }
+
     // переключаются панели
     document.getElementById('user-table').getAttributeNode('class').value = 'tab-pane active';
     document.getElementById('new-user').getAttributeNode('class').value = 'tab-pane';
@@ -272,15 +299,22 @@ async function addNewUser() {
     document.getElementById('navTabNU').getAttributeNode('class').value = 'nav-link';
     document.getElementById('navTabUT').getAttributeNode('class').value = 'nav-link active';
 
-
-    tableFull();
 }
 // Удаление пользователя
 async function removeFromBD(id) {
     await fetch('http://localhost:8080/admin/users/' + id, {
         method: 'DELETE'
     });
-    tableFull();
+
+    let tbody = document.querySelector('#users tbody');
+
+    for (let tr of tbody.childNodes) {
+
+        let userId = tr.childNodes[0].nextSibling.textContent;
+        if (id == userId) {
+            tr.remove();
+        }
+    }
 }
 // Обновление пользователя
 async function upDateUser(id) {
@@ -317,8 +351,32 @@ async function upDateUser(id) {
         body: JSON.stringify(user)
     });
 
-    let result = await response.json();
-    console.log(result);
+    if (response.ok) {
+        let result = await response.json();
 
-    tableFull();
+        let tbody = document.querySelector('#users tbody');
+
+        let thList;
+
+        for (let tr of tbody.getElementsByTagName('tr',)) {
+            let th = tr.cells;
+            if (th.item(0).textContent == id) {
+                thList = th;
+            }
+        }
+
+        let printRoles = '';
+        for (let i = 0; i < result.roles.length; i++) {
+            printRoles += result.roles[i].authority;
+            if (i != (arrRoles.length - 1)) {
+                printRoles += ' ';
+            }
+        }
+        thList.item(1).textContent = result.firstname;
+        thList.item(2).textContent = result.lastname;
+        thList.item(3).textContent = result.age;
+        thList.item(4).textContent = result.email;
+        thList.item(5).textContent = printRoles;
+
+    }
 }
